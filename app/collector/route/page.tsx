@@ -1,0 +1,1 @@
+import {MapPin} from 'lucide-react';export default function Route(){return <div className="page"><h1>Route</h1><p>Rute pickup dan titik pengantaran collector.</p><div className="map-placeholder mt-6 min-h-[520px]"><MapPin size={45}/><span>Mapbox route view</span><small>Tambahkan NEXT_PUBLIC_MAPBOX_TOKEN untuk peta interaktif.</small></div></div>}

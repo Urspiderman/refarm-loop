@@ -1,0 +1,2 @@
+import Chatbot from '@/components/chatbot';import {requireRole} from '@/lib/auth';import AppShell from '@/components/app-shell';import AdminShell from '@/components/admin-shell';
+export default async function AI(){const {role}=await requireRole(['supplier_farmer','supplier_market','recovery_partner','collector','admin']);if(role==='admin')return <AdminShell><Chatbot/></AdminShell>;return <AppShell role={role}><Chatbot/></AppShell>}

@@ -1,0 +1,2 @@
+import { NextResponse } from "next/server"; import { verifyMidtransSignature } from "@/lib/midtrans";
+export async function POST(req:Request){const b=await req.json();const ok=verifyMidtransSignature(b.order_id,b.status_code,b.gross_amount,b.signature_key);if(!ok)return NextResponse.json({error:"Invalid signature"},{status:401});/* TODO: persist verified payment event + transaction status in Supabase */return NextResponse.json({ok:true});}

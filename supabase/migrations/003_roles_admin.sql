@@ -1,0 +1,20 @@
+-- Role-specific RLS for ReFarm Loop. No seed data.
+drop policy if exists "admin profiles read all" on public.profiles; create policy "admin profiles read all" on public.profiles for select using (public.is_admin());
+drop policy if exists "admin surplus read all" on public.surplus_listings; create policy "admin surplus read all" on public.surplus_listings for select using (public.is_admin());
+drop policy if exists "admin assessment read all" on public.material_assessments; create policy "admin assessment read all" on public.material_assessments for select using (public.is_admin());
+drop policy if exists "admin demand read all" on public.material_demands; create policy "admin demand read all" on public.material_demands for select using (public.is_admin());
+drop policy if exists "admin matches read all" on public.matches; create policy "admin matches read all" on public.matches for select using (public.is_admin());
+drop policy if exists "admin transactions read all" on public.transactions; create policy "admin transactions read all" on public.transactions for select using (public.is_admin());
+drop policy if exists "admin payments read all" on public.payments; create policy "admin payments read all" on public.payments for select using (public.is_admin());
+drop policy if exists "admin pickups read all" on public.pickups; create policy "admin pickups read all" on public.pickups for select using (public.is_admin());
+drop policy if exists "admin recovery read all" on public.recovery_records; create policy "admin recovery read all" on public.recovery_records for select using (public.is_admin());
+drop policy if exists "admin impact read all" on public.impact_records; create policy "admin impact read all" on public.impact_records for select using (public.is_admin());
+drop policy if exists "collector own pickups read" on public.pickups; create policy "collector own pickups read" on public.pickups for select using (collector_id=auth.uid() or public.is_admin());
+drop policy if exists "collector own pickups update" on public.pickups; create policy "collector own pickups update" on public.pickups for update using (collector_id=auth.uid() or public.is_admin()) with check (collector_id=auth.uid() or public.is_admin());
+drop policy if exists "collector own pickup events" on public.pickup_events; create policy "collector own pickup events" on public.pickup_events for all using (exists(select 1 from public.pickups p where p.id=pickup_id and p.collector_id=auth.uid()) or public.is_admin()) with check (exists(select 1 from public.pickups p where p.id=pickup_id and p.collector_id=auth.uid()) or public.is_admin());
+drop policy if exists "partner recovery own read" on public.recovery_records; create policy "partner recovery own read" on public.recovery_records for select using (recovery_partner_id=auth.uid() or public.is_admin());
+drop policy if exists "partner recovery own insert" on public.recovery_records; create policy "partner recovery own insert" on public.recovery_records for insert with check (recovery_partner_id=auth.uid() or public.is_admin());
+drop policy if exists "partner recovery own update" on public.recovery_records; create policy "partner recovery own update" on public.recovery_records for update using (recovery_partner_id=auth.uid() or public.is_admin()) with check (recovery_partner_id=auth.uid() or public.is_admin());
+create table if not exists public.platform_settings (id boolean primary key default true, platform_fee_percent numeric(6,3) not null default 0, updated_at timestamptz not null default now(), check (id=true), check (platform_fee_percent>=0 and platform_fee_percent<=100));
+alter table public.platform_settings enable row level security;
+drop policy if exists "platform settings admin" on public.platform_settings; create policy "platform settings admin" on public.platform_settings for all using (public.is_admin()) with check (public.is_admin());
