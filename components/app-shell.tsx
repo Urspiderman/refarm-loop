@@ -30,7 +30,7 @@ const partner = [
   ["/partner/incoming", "Pasokan Masuk", Truck],
   ["/partner/recovery", "Pemulihan", Recycle],
   ["/partner/transactions", "Transaksi", Receipt],
-  ["/partner/profile", "Profil", User],
+  ["/profile", "Profil", User],
 ] as const;
 
 const collector = [
