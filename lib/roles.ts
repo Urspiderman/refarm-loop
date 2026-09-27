@@ -11,7 +11,7 @@ export function roleHome(role: Role) {
       return "/admin/overview";
 
     case "recovery_partner":
-      return "/partners";
+      return "/partner/home";
 
     case "collector":
       return "/collector/dashboard";
