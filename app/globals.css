@@ -1,3 +1,305 @@
 @import "tailwindcss";
-:root{--green-950:#2d4d1f;--green-900:#476b2d;--green-800:#5f8035;--green-700:#789844;--green-600:#9ebc5b;--mint:#e6f2cf;--mint-2:#f4f9e9;--ink:#26351f;--muted:#71806b;--line:#dce7d3;--bg:#f5f8f0;--surface:#fff}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif}button,input,select,textarea{font:inherit}a{text-decoration:none;color:inherit}.card{background:var(--surface);border:1px solid var(--line);border-radius:24px;box-shadow:0 5px 20px rgba(50,80,35,.045)}.page{padding:32px 20px;max-width:1280px;margin:auto}.page h1{font-size:34px;line-height:1.1;font-weight:900;letter-spacing:-.03em;color:#18301a}.page>p,.page h1+p{margin-top:5px;color:var(--muted);font-size:14px}.page h2{font-size:18px;font-weight:900}.btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--green-800);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:700;transition:.2s}.btn-primary:hover{background:var(--green-900)}.btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:var(--green-900);border:1px solid var(--green-600);border-radius:14px;padding:11px 18px;font-weight:700}.input{width:100%;border:1px solid var(--line);border-radius:13px;padding:12px 14px;background:#fff;outline:none;color:var(--ink)}.input:focus{border-color:var(--green-600);box-shadow:0 0 0 3px rgba(158,188,91,.16)}.pill{display:inline-flex;align-items:center;border-radius:999px;padding:5px 10px;background:var(--mint);color:var(--green-900);font-size:11px;font-weight:700}.pill.active{background:var(--green-800);color:white}.soft{background:var(--mint-2)}.leaf-logo{display:inline-flex;width:27px;height:27px;border-radius:50%;align-items:center;justify-content:center;background:var(--mint);font-size:26px;transform:rotate(-25deg)}.map-placeholder{min-height:280px;border-radius:22px;background:linear-gradient(145deg,#edf6dc,#d8ebc0);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--green-900);font-weight:800;text-align:center}.map-placeholder small{font-weight:500;color:var(--muted)}.flow-banner{display:grid;gap:10px;grid-template-columns:1fr;align-items:center}.flow-banner>div{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px}.flow-banner span{display:block;font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.1em}.flow-banner strong{display:block;margin-top:5px;font-size:16px}@media(min-width:768px){.page{padding:40px 32px}.flow-banner{grid-template-columns:1fr 30px 1fr 30px 1fr 30px 1fr}.flow-banner svg{margin:auto}}
+
+:root {
+  --green-950: #2d4d1f;
+  --green-900: #476b2d;
+  --green-800: #5f8035;
+  --green-700: #789844;
+  --green-600: #9ebc5b;
+
+  --mint: #e6f2cf;
+  --mint-2: #f4f9e9;
+
+  --ink: #26351f;
+  --muted: #71806b;
+  --line: #dce7d3;
+  --bg: #f5f8f0;
+  --surface: #fff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* =========================
+   Card
+========================= */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: 0 5px 20px rgba(50, 80, 35, 0.045);
+}
+
+/* =========================
+   Page
+========================= */
+
+.page {
+  padding: 32px 20px;
+  max-width: 1280px;
+  margin: auto;
+}
+
+.page h1 {
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #18301a;
+}
+
+.page > p,
+.page h1 + p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.page h2 {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+/* =========================
+   Buttons
+========================= */
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  background: var(--green-800);
+  color: #fff;
+
+  border: 0;
+  border-radius: 14px;
+
+  padding: 12px 18px;
+
+  font-weight: 700;
+  transition: 0.2s;
+}
+
+.btn-primary:hover {
+  background: var(--green-900);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  background: #fff;
+  color: var(--green-900);
+
+  border: 1px solid var(--green-600);
+  border-radius: 14px;
+
+  padding: 11px 18px;
+
+  font-weight: 700;
+}
+
+/* =========================
+   Input
+========================= */
+
+.input {
+  width: 100%;
+
+  border: 1px solid var(--line);
+  border-radius: 13px;
+
+  padding: 12px 14px;
+
+  background: #fff;
+  outline: none;
+  color: var(--ink);
+}
+
+.input:focus {
+  border-color: var(--green-600);
+  box-shadow: 0 0 0 3px rgba(158, 188, 91, 0.16);
+}
+
+/* =========================
+   Pill
+========================= */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+
+  border-radius: 999px;
+
+  padding: 5px 10px;
+
+  background: var(--mint);
+  color: var(--green-900);
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pill.active {
+  background: var(--green-800);
+  color: white;
+}
+
+/* =========================
+   Soft Background
+========================= */
+
+.soft {
+  background: var(--mint-2);
+}
+
+/* =========================
+   Leaf Logo
+========================= */
+
+.leaf-logo {
+  display: inline-flex;
+
+  width: 27px;
+  height: 27px;
+
+  border-radius: 50%;
+
+  align-items: center;
+  justify-content: center;
+
+  background: var(--mint);
+
+  font-size: 26px;
+
+  transform: rotate(-25deg);
+}
+
+/* =========================
+   Map Placeholder
+========================= */
+
+.map-placeholder {
+  min-height: 280px;
+
+  border-radius: 22px;
+
+  background: linear-gradient(
+    145deg,
+    #edf6dc,
+    #d8ebc0
+  );
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  gap: 8px;
+
+  color: var(--green-900);
+
+  font-weight: 800;
+  text-align: center;
+}
+
+.map-placeholder small {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* =========================
+   Flow Banner
+========================= */
+
+.flow-banner {
+  display: grid;
+
+  gap: 10px;
+
+  grid-template-columns: 1fr;
+
+  align-items: center;
+}
+
+.flow-banner > div {
+  background: #fff;
+
+  border: 1px solid var(--line);
+  border-radius: 18px;
+
+  padding: 18px;
+}
+
+.flow-banner span {
+  display: block;
+
+  font-size: 10px;
+  color: var(--muted);
+
+  font-weight: 800;
+
+  letter-spacing: 0.1em;
+}
+
+.flow-banner strong {
+  display: block;
+
+  margin-top: 5px;
+
+  font-size: 16px;
+}
+
+/* =========================
+   Responsive
+========================= */
+
+@media (min-width: 768px) {
+  .page {
+    padding: 40px 32px;
+  }
+
+  .flow-banner {
+    grid-template-columns:
+      1fr
+      30px
+      1fr
+      30px
+      1fr
+      30px
+      1fr;
+  }
+
+  .flow-banner svg {
+    margin: auto;
+  }
+}

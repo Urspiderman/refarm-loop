@@ -43,7 +43,9 @@ export default function SurplusForm() {
 
   const [step, setStep] = useState<Step>(1);
 
-  // Form fields sesuai schema surplus_listings
+  // =========================
+  // FORM DATA
+  // =========================
   const [materialName, setMaterialName] = useState("");
   const [category, setCategory] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -53,28 +55,54 @@ export default function SurplusForm() {
   const [availableDate, setAvailableDate] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Photo
+  // =========================
+  // GPS
+  // =========================
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState("");
+
+  // =========================
+  // PHOTO
+  // =========================
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState("");
 
-  // Process
+  // =========================
+  // PROCESS
+  // =========================
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Created surplus
+  // =========================
+  // CREATED SURPLUS
+  // =========================
   const [surplusId, setSurplusId] = useState<string | null>(null);
 
-  // Gemini assessment
-  const [assessment, setAssessment] = useState<AssessmentResult | null>(null);
-  const [assessmentLoading, setAssessmentLoading] = useState(false);
+  // =========================
+  // GEMINI ASSESSMENT
+  // =========================
+  const [assessment, setAssessment] =
+    useState<AssessmentResult | null>(null);
 
-  function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
+  const [assessmentLoading, setAssessmentLoading] =
+    useState(false);
+
+  // =========================
+  // PHOTO HANDLER
+  // =========================
+  function handlePhotoChange(
+    event: ChangeEvent<HTMLInputElement>
+  ) {
     const file = event.target.files?.[0];
 
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setErrorMessage("File yang dipilih harus berupa gambar.");
+      setErrorMessage(
+        "File yang dipilih harus berupa gambar."
+      );
       return;
     }
 
@@ -101,6 +129,101 @@ export default function SurplusForm() {
     setPhotoPreview("");
   }
 
+  // =========================
+  // GPS
+  // =========================
+  async function getCurrentLocation() {
+    if (!navigator.geolocation) {
+      setGpsError(
+        "Browser Anda tidak mendukung GPS."
+      );
+      return;
+    }
+
+    setGpsLoading(true);
+    setGpsError("");
+    setErrorMessage("");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        setLatitude(lat);
+        setLongitude(lng);
+
+        try {
+          const response = await fetch(
+            `/api/geocode?lat=${lat}&lng=${lng}`
+          );
+
+          if (!response.ok) {
+            throw new Error(
+              "Gagal mendapatkan alamat dari koordinat GPS."
+            );
+          }
+
+          const data = await response.json();
+
+          setLocation(
+            data.address ||
+              `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+          );
+        } catch (error) {
+          console.error(
+            "Reverse geocoding error:",
+            error
+          );
+
+          // Koordinat tetap disimpan walaupun alamat gagal
+          setLocation(
+            `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+          );
+        } finally {
+          setGpsLoading(false);
+        }
+      },
+      (error) => {
+        console.error("GPS error:", error);
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setGpsError(
+              "Izin lokasi ditolak. Silakan izinkan akses lokasi di browser."
+            );
+            break;
+
+          case error.POSITION_UNAVAILABLE:
+            setGpsError(
+              "Lokasi GPS tidak tersedia. Pastikan GPS atau Location Services aktif."
+            );
+            break;
+
+          case error.TIMEOUT:
+            setGpsError(
+              "Pengambilan lokasi terlalu lama. Silakan coba lagi."
+            );
+            break;
+
+          default:
+            setGpsError(
+              "Gagal mendapatkan lokasi perangkat."
+            );
+        }
+
+        setGpsLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      }
+    );
+  }
+
+  // =========================
+  // VALIDATION
+  // =========================
   function validateStepOne() {
     if (!materialName.trim()) {
       setErrorMessage("Nama material wajib diisi.");
@@ -108,7 +231,9 @@ export default function SurplusForm() {
     }
 
     if (!quantity || Number(quantity) <= 0) {
-      setErrorMessage("Jumlah material harus lebih dari 0.");
+      setErrorMessage(
+        "Jumlah material harus lebih dari 0."
+      );
       return false;
     }
 
@@ -133,6 +258,9 @@ export default function SurplusForm() {
     setStep(2);
   }
 
+  // =========================
+  // SUBMIT SURPLUS
+  // =========================
   async function submitSurplus(event?: FormEvent) {
     event?.preventDefault();
 
@@ -146,7 +274,7 @@ export default function SurplusForm() {
     setLoading(true);
 
     try {
-      // Pastikan user sedang login
+      // Pastikan user login
       const {
         data: { user },
         error: userError,
@@ -161,86 +289,93 @@ export default function SurplusForm() {
         return;
       }
 
-      /*
-       * INSERT sesuai schema aktual:
-       *
-       * id
-       * supplier_id
-       * material_name
-       * quantity
-       * unit
-       * condition
-       * photo_path
-       * status
-       * created_at
-       * updated_at
-       * category
-       * location_text
-       * available_date
-       * notes
-       */
-      const { data: surplus, error: surplusError } = await supabase
-        .from("surplus_listings")
-        .insert({
-          supplier_id: user.id,
-          material_name: materialName.trim(),
-          quantity: Number(quantity),
-          unit: unit.trim(),
-          condition: condition.trim() || null,
-          category: category.trim() || null,
-          location_text: location.trim() || null,
-          available_date: availableDate || null,
-          notes: notes.trim() || null,
-          status: "listed",
-        })
-        .select("*")
-        .single();
+      // =========================
+      // INSERT SURPLUS + GPS
+      // =========================
+      const { data: surplus, error: surplusError } =
+        await supabase
+          .from("surplus_listings")
+          .insert({
+            supplier_id: user.id,
+            material_name: materialName.trim(),
+            quantity: Number(quantity),
+            unit: unit.trim(),
+            condition: condition.trim() || null,
+            category: category.trim() || null,
+
+            // Lokasi yang dapat dibaca pengguna
+            location_text: location.trim() || null,
+
+            // Koordinat GPS
+            latitude,
+            longitude,
+
+            available_date:
+              availableDate || null,
+
+            notes: notes.trim() || null,
+
+            status: "listed",
+          })
+          .select("*")
+          .single();
 
       if (surplusError || !surplus) {
-        console.error("Surplus insert error:", {
-          message: surplusError?.message,
-          details: surplusError?.details,
-          hint: surplusError?.hint,
-          code: surplusError?.code,
-        });
+        console.error(
+          "Surplus insert error:",
+          {
+            message: surplusError?.message,
+            details: surplusError?.details,
+            hint: surplusError?.hint,
+            code: surplusError?.code,
+          }
+        );
 
         throw new Error(
-          surplusError?.message || "Gagal menyimpan surplus."
+          surplusError?.message ||
+            "Gagal menyimpan surplus."
         );
       }
 
       setSurplusId(surplus.id);
 
-      // Upload foto jika user memilih foto
+      // =========================
+      // UPLOAD FOTO
+      // =========================
       if (photoFile) {
         const extension =
-          photoFile.name.split(".").pop()?.toLowerCase() || "jpg";
+          photoFile.name
+            .split(".")
+            .pop()
+            ?.toLowerCase() || "jpg";
 
         const filePath = `${user.id}/surplus/${surplus.id}.${extension}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("refarm-media")
-          .upload(filePath, photoFile, {
-            upsert: true,
-            contentType: photoFile.type,
-          });
+        const { error: uploadError } =
+          await supabase.storage
+            .from("refarm-media")
+            .upload(filePath, photoFile, {
+              upsert: true,
+              contentType: photoFile.type,
+            });
 
         if (uploadError) {
-          console.error("Photo upload error:", {
-            message: uploadError.message,
-            details: uploadError,
-            filePath,
-          });
+          console.error(
+            "Photo upload error:",
+            {
+              message: uploadError.message,
+              details: uploadError,
+              filePath,
+            }
+          );
 
-          /*
-           * Record surplus sudah berhasil dibuat.
-           * Jadi upload foto gagal tidak membatalkan surplus.
-           */
           setErrorMessage(
             "Surplus berhasil disimpan, tetapi foto gagal diupload. Anda tetap bisa melanjutkan."
           );
         } else {
-          const { error: photoUpdateError } = await supabase
+          const {
+            error: photoUpdateError,
+          } = await supabase
             .from("surplus_listings")
             .update({
               photo_path: filePath,
@@ -248,19 +383,27 @@ export default function SurplusForm() {
             .eq("id", surplus.id);
 
           if (photoUpdateError) {
-            console.error("Photo path update error:", {
-              message: photoUpdateError.message,
-              details: photoUpdateError.details,
-              hint: photoUpdateError.hint,
-              code: photoUpdateError.code,
-            });
+            console.error(
+              "Photo path update error:",
+              {
+                message:
+                  photoUpdateError.message,
+                details:
+                  photoUpdateError.details,
+                hint: photoUpdateError.hint,
+                code: photoUpdateError.code,
+              }
+            );
           }
         }
       }
 
       setStep(3);
     } catch (error) {
-      console.error("Submit surplus failed:", error);
+      console.error(
+        "Submit surplus failed:",
+        error
+      );
 
       setErrorMessage(
         error instanceof Error
@@ -272,9 +415,14 @@ export default function SurplusForm() {
     }
   }
 
+  // =========================
+  // AI ASSESSMENT
+  // =========================
   async function runAssessment() {
     if (!surplusId) {
-      setErrorMessage("ID surplus tidak ditemukan.");
+      setErrorMessage(
+        "ID surplus tidak ditemukan."
+      );
       return;
     }
 
@@ -294,23 +442,33 @@ export default function SurplusForm() {
       formData.append("file", photoFile);
       formData.append("surplus_id", surplusId);
 
-      const response = await fetch("/api/ai/assess", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        "/api/ai/assess",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const result = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          result?.error || "ReFarm AI gagal melakukan assessment."
+          result?.error ||
+            "ReFarm AI gagal melakukan assessment."
         );
       }
 
-      setAssessment(result.assessment || result);
+      setAssessment(
+        result.assessment || result
+      );
+
       setStep(4);
     } catch (error) {
-      console.error("AI assessment error:", error);
+      console.error(
+        "AI assessment error:",
+        error
+      );
 
       setErrorMessage(
         error instanceof Error
@@ -322,6 +480,9 @@ export default function SurplusForm() {
     }
   }
 
+  // =========================
+  // NAVIGATION
+  // =========================
   function skipAssessment() {
     router.push("/surplus");
   }
@@ -330,6 +491,9 @@ export default function SurplusForm() {
     router.push("/discover");
   }
 
+  // =========================
+  // UI
+  // =========================
   return (
     <div className="mx-auto w-full max-w-3xl">
       {/* Progress */}
@@ -338,13 +502,23 @@ export default function SurplusForm() {
           {[
             { number: 1, label: "Detail" },
             { number: 2, label: "Foto" },
-            { number: 3, label: "AI Assessment" },
-            { number: 4, label: "Selesai" },
+            {
+              number: 3,
+              label: "AI Assessment",
+            },
+            {
+              number: 4,
+              label: "Selesai",
+            },
           ].map((item, index) => {
-            const active = step >= item.number;
+            const active =
+              step >= item.number;
 
             return (
-              <div key={item.number} className="flex flex-1 items-center">
+              <div
+                key={item.number}
+                className="flex flex-1 items-center"
+              >
                 <div className="flex flex-col items-center">
                   <div
                     className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition ${
@@ -362,7 +536,9 @@ export default function SurplusForm() {
 
                   <span
                     className={`mt-2 text-xs font-medium ${
-                      active ? "text-emerald-700" : "text-gray-400"
+                      active
+                        ? "text-emerald-700"
+                        : "text-gray-400"
                     }`}
                   >
                     {item.label}
@@ -387,11 +563,15 @@ export default function SurplusForm() {
       {/* Error */}
       {errorMessage && (
         <div className="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          <div className="flex-1">{errorMessage}</div>
+          <div className="flex-1">
+            {errorMessage}
+          </div>
 
           <button
             type="button"
-            onClick={() => setErrorMessage("")}
+            onClick={() =>
+              setErrorMessage("")
+            }
             className="shrink-0 rounded-lg p-1 hover:bg-red-100"
           >
             <X className="h-4 w-4" />
@@ -399,7 +579,9 @@ export default function SurplusForm() {
         </div>
       )}
 
-      {/* STEP 1 */}
+      {/* =========================
+          STEP 1
+      ========================= */}
       {step === 1 && (
         <form
           onSubmit={(event) => {
@@ -414,11 +596,12 @@ export default function SurplusForm() {
             </div>
 
             <h2 className="text-2xl font-black text-gray-900">
-              Tell us about your surplus
+              Detail surplus
             </h2>
 
             <p className="mt-1 text-sm text-gray-500">
-              Masukkan informasi material surplus yang ingin Anda salurkan.
+              Masukkan informasi material surplus
+              yang ingin Anda salurkan.
             </p>
           </div>
 
@@ -432,7 +615,11 @@ export default function SurplusForm() {
               <input
                 type="text"
                 value={materialName}
-                onChange={(event) => setMaterialName(event.target.value)}
+                onChange={(event) =>
+                  setMaterialName(
+                    event.target.value
+                  )
+                }
                 placeholder="Contoh: Sawi layu"
                 className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50"
               />
@@ -446,16 +633,40 @@ export default function SurplusForm() {
 
               <select
                 value={category}
-                onChange={(event) => setCategory(event.target.value)}
+                onChange={(event) =>
+                  setCategory(
+                    event.target.value
+                  )
+                }
                 className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50"
               >
-                <option value="">Pilih kategori</option>
-                <option value="vegetable">Sayuran</option>
-                <option value="fruit">Buah</option>
-                <option value="grain">Biji-bijian</option>
-                <option value="crop_residue">Limbah tanaman</option>
-                <option value="organic">Organik lainnya</option>
-                <option value="other">Lainnya</option>
+                <option value="">
+                  Pilih kategori
+                </option>
+
+                <option value="vegetable">
+                  Sayuran
+                </option>
+
+                <option value="fruit">
+                  Buah
+                </option>
+
+                <option value="grain">
+                  Biji-bijian
+                </option>
+
+                <option value="crop_residue">
+                  Limbah tanaman
+                </option>
+
+                <option value="organic">
+                  Organik lainnya
+                </option>
+
+                <option value="other">
+                  Lainnya
+                </option>
               </select>
             </div>
 
@@ -471,7 +682,11 @@ export default function SurplusForm() {
                   min="0"
                   step="0.01"
                   value={quantity}
-                  onChange={(event) => setQuantity(event.target.value)}
+                  onChange={(event) =>
+                    setQuantity(
+                      event.target.value
+                    )
+                  }
                   placeholder="300"
                   className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50"
                 />
@@ -484,14 +699,32 @@ export default function SurplusForm() {
 
                 <select
                   value={unit}
-                  onChange={(event) => setUnit(event.target.value)}
+                  onChange={(event) =>
+                    setUnit(
+                      event.target.value
+                    )
+                  }
                   className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50"
                 >
-                  <option value="kg">Kilogram (kg)</option>
-                  <option value="ton">Ton</option>
-                  <option value="gram">Gram</option>
-                  <option value="liter">Liter</option>
-                  <option value="unit">Unit</option>
+                  <option value="kg">
+                    Kilogram (kg)
+                  </option>
+
+                  <option value="ton">
+                    Ton
+                  </option>
+
+                  <option value="gram">
+                    Gram
+                  </option>
+
+                  <option value="liter">
+                    Liter
+                  </option>
+
+                  <option value="unit">
+                    Unit
+                  </option>
                 </select>
               </div>
             </div>
@@ -504,14 +737,18 @@ export default function SurplusForm() {
 
               <textarea
                 value={condition}
-                onChange={(event) => setCondition(event.target.value)}
+                onChange={(event) =>
+                  setCondition(
+                    event.target.value
+                  )
+                }
                 placeholder="Contoh: Layu, masih bersih, tidak berjamur"
                 rows={3}
                 className="w-full resize-none rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50"
               />
             </div>
 
-            {/* Location */}
+            {/* Location + GPS */}
             <div>
               <label className="mb-2 block text-sm font-semibold text-gray-700">
                 Lokasi surplus *
@@ -523,11 +760,59 @@ export default function SurplusForm() {
                 <input
                   type="text"
                   value={location}
-                  onChange={(event) => setLocation(event.target.value)}
+                  onChange={(event) =>
+                    setLocation(
+                      event.target.value
+                    )
+                  }
                   placeholder="Contoh: Pasar Inpres, Lubuklinggau"
                   className="w-full rounded-2xl border border-gray-200 bg-gray-50 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50"
                 />
               </div>
+
+              <button
+                type="button"
+                onClick={getCurrentLocation}
+                disabled={gpsLoading}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {gpsLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Mendapatkan lokasi...
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="h-4 w-4" />
+                    Gunakan lokasi saya
+                  </>
+                )}
+              </button>
+
+              {latitude !== null &&
+                longitude !== null && (
+                  <div className="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                    <p className="font-semibold">
+                      Lokasi GPS berhasil ditemukan
+                    </p>
+
+                    <p className="mt-1">
+                      Latitude:{" "}
+                      {latitude.toFixed(6)}
+                    </p>
+
+                    <p>
+                      Longitude:{" "}
+                      {longitude.toFixed(6)}
+                    </p>
+                  </div>
+                )}
+
+              {gpsError && (
+                <p className="mt-2 text-xs text-red-600">
+                  {gpsError}
+                </p>
+              )}
             </div>
 
             {/* Available date */}
@@ -539,7 +824,11 @@ export default function SurplusForm() {
               <input
                 type="date"
                 value={availableDate}
-                onChange={(event) => setAvailableDate(event.target.value)}
+                onChange={(event) =>
+                  setAvailableDate(
+                    event.target.value
+                  )
+                }
                 className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50"
               />
             </div>
@@ -552,7 +841,9 @@ export default function SurplusForm() {
 
               <textarea
                 value={notes}
-                onChange={(event) => setNotes(event.target.value)}
+                onChange={(event) =>
+                  setNotes(event.target.value)
+                }
                 placeholder="Tambahkan informasi lain mengenai surplus..."
                 rows={3}
                 className="w-full resize-none rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50"
@@ -570,7 +861,9 @@ export default function SurplusForm() {
         </form>
       )}
 
-      {/* STEP 2 */}
+      {/* =========================
+          STEP 2
+      ========================= */}
       {step === 2 && (
         <div className="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm md:p-8">
           <div className="mb-7">
@@ -579,12 +872,13 @@ export default function SurplusForm() {
             </div>
 
             <h2 className="text-2xl font-black text-gray-900">
-              Add a photo
+              Tambahkan foto
             </h2>
 
             <p className="mt-1 text-sm text-gray-500">
-              Foto akan digunakan ReFarm AI untuk melakukan assessment awal
-              terhadap material.
+              Foto akan digunakan ReFarm AI untuk
+              melakukan assessment awal terhadap
+              material.
             </p>
           </div>
 
@@ -626,11 +920,18 @@ export default function SurplusForm() {
               </button>
 
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-5 pb-5 pt-12 text-white">
-                <p className="text-sm font-semibold">{photoFile?.name}</p>
+                <p className="text-sm font-semibold">
+                  {photoFile?.name}
+                </p>
 
                 {photoFile && (
                   <p className="mt-1 text-xs opacity-80">
-                    {(photoFile.size / 1024 / 1024).toFixed(2)} MB
+                    {(
+                      photoFile.size /
+                      1024 /
+                      1024
+                    ).toFixed(2)}{" "}
+                    MB
                   </p>
                 )}
               </div>
@@ -670,7 +971,9 @@ export default function SurplusForm() {
         </div>
       )}
 
-      {/* STEP 3 */}
+      {/* =========================
+          STEP 3
+      ========================= */}
       {step === 3 && (
         <div className="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm md:p-8">
           <div className="text-center">
@@ -683,8 +986,10 @@ export default function SurplusForm() {
             </h2>
 
             <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-gray-500">
-              Data surplus sudah tercatat. Sekarang ReFarm AI dapat membantu
-              melakukan assessment awal berdasarkan foto material.
+              Data surplus sudah tercatat.
+              Sekarang ReFarm AI dapat membantu
+              melakukan assessment awal berdasarkan
+              foto material.
             </p>
           </div>
 
@@ -715,7 +1020,9 @@ export default function SurplusForm() {
           <button
             type="button"
             onClick={runAssessment}
-            disabled={assessmentLoading || !photoFile}
+            disabled={
+              assessmentLoading || !photoFile
+            }
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {assessmentLoading ? (
@@ -726,14 +1033,15 @@ export default function SurplusForm() {
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                Analyze with ReFarm AI
+                Analisis dengan ReFarm AI
               </>
             )}
           </button>
 
           {!photoFile && (
             <p className="mt-3 text-center text-xs text-amber-600">
-              Tidak ada foto. Assessment AI membutuhkan foto material.
+              Tidak ada foto. Assessment AI
+              membutuhkan foto material.
             </p>
           )}
 
@@ -748,7 +1056,9 @@ export default function SurplusForm() {
         </div>
       )}
 
-      {/* STEP 4 */}
+      {/* =========================
+          STEP 4
+      ========================= */}
       {step === 4 && (
         <div className="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm md:p-8">
           <div className="text-center">
@@ -757,7 +1067,7 @@ export default function SurplusForm() {
             </div>
 
             <h2 className="text-2xl font-black text-gray-900">
-              AI Assessment Complete
+              Assessment AI selesai
             </h2>
 
             <p className="mt-2 text-sm text-gray-500">
@@ -767,7 +1077,7 @@ export default function SurplusForm() {
 
           {assessment && (
             <div className="mt-7 space-y-4">
-              {/* Material type */}
+              {/* Material */}
               {assessment.material_type && (
                 <div className="rounded-2xl bg-gray-50 p-5">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
@@ -793,16 +1103,20 @@ export default function SurplusForm() {
                 </div>
               )}
 
-              {/* Recovery potential */}
-              {typeof assessment.recovery_potential === "number" && (
+              {/* Recovery Potential */}
+              {typeof assessment.recovery_potential ===
+                "number" && (
                 <div className="rounded-2xl border border-gray-100 p-5">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-bold text-gray-800">
-                      Recovery Potential
+                      Potensi Recovery
                     </p>
 
                     <p className="font-black text-emerald-700">
-                      {Math.round(assessment.recovery_potential)}%
+                      {Math.round(
+                        assessment.recovery_potential
+                      )}
+                      %
                     </p>
                   </div>
 
@@ -812,7 +1126,10 @@ export default function SurplusForm() {
                       style={{
                         width: `${Math.min(
                           100,
-                          Math.max(0, assessment.recovery_potential)
+                          Math.max(
+                            0,
+                            assessment.recovery_potential
+                          )
                         )}%`,
                       }}
                     />
@@ -822,21 +1139,26 @@ export default function SurplusForm() {
 
               {/* Pathways */}
               {assessment.recommended_pathways &&
-                assessment.recommended_pathways.length > 0 && (
+                assessment.recommended_pathways
+                  .length > 0 && (
                   <div className="rounded-2xl border border-gray-100 p-5">
                     <p className="text-sm font-bold text-gray-800">
-                      Recommended Recovery Pathways
+                      Rekomendasi Recovery
                     </p>
 
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {assessment.recommended_pathways.map((pathway) => (
-                        <span
-                          key={pathway}
-                          className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700"
-                        >
-                          {PATHWAY_LABELS[pathway] || pathway}
-                        </span>
-                      ))}
+                      {assessment.recommended_pathways.map(
+                        (pathway) => (
+                          <span
+                            key={pathway}
+                            className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700"
+                          >
+                            {PATHWAY_LABELS[
+                              pathway
+                            ] || pathway}
+                          </span>
+                        )
+                      )}
                     </div>
                   </div>
                 )}
@@ -855,18 +1177,24 @@ export default function SurplusForm() {
               )}
 
               {/* Confidence */}
-              {typeof assessment.confidence === "number" && (
+              {typeof assessment.confidence ===
+                "number" && (
                 <p className="text-center text-xs text-gray-400">
-                  AI confidence:{" "}
-                  {Math.round(assessment.confidence * 100)}%
+                  Tingkat keyakinan AI:{" "}
+                  {Math.round(
+                    assessment.confidence * 100
+                  )}
+                  %
                 </p>
               )}
 
+              {/* Disclaimer */}
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-800">
-                Assessment ini merupakan rekomendasi awal dari AI, bukan
-                sertifikasi keamanan atau kelayakan material. Keputusan akhir
-                tetap perlu divalidasi oleh recovery partner dan standar yang
-                berlaku.
+                Assessment ini merupakan rekomendasi
+                awal dari AI, bukan sertifikasi keamanan
+                atau kelayakan material. Keputusan akhir
+                tetap perlu divalidasi oleh recovery
+                partner dan standar yang berlaku.
               </div>
             </div>
           )}
@@ -876,16 +1204,18 @@ export default function SurplusForm() {
             onClick={goToDiscover}
             className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700"
           >
-            Find Recovery Partners
+            Cari Recovery Partner
             <ArrowRight className="h-4 w-4" />
           </button>
 
           <button
             type="button"
-            onClick={() => router.push("/surplus")}
+            onClick={() =>
+              router.push("/surplus")
+            }
             className="mt-3 w-full rounded-2xl px-5 py-3 text-sm font-semibold text-gray-500 transition hover:bg-gray-50 hover:text-gray-700"
           >
-            Lihat My Surplus
+            Lihat Surplus Saya
           </button>
         </div>
       )}

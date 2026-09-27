@@ -13,19 +13,20 @@ import {
   Handshake,
   Receipt,
   Bot,
+  Leaf,
   LogOut,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const items = [
-  ["/admin/overview", "Overview", LayoutDashboard, "/admin/overview"],
+  ["/admin/overview", "Beranda", LayoutDashboard, "/admin/overview"],
   ["/admin/network", "Network", Network, "/admin/network"],
   ["/admin/material-flow", "Material Flow", Boxes, "/admin/material-flow"],
-  ["/admin/operations", "Operations", Truck, "/admin/operations"],
-  ["/admin/transactions", "Transactions", Receipt, "/admin/transactions"],
+  ["/admin/operations", "Operasional", Truck, "/admin/operations"],
+  ["/admin/transactions", "Transaksi", Receipt, "/admin/transactions"],
   ["/admin/ai-monitor", "AI Monitor", BrainCircuit, "/admin/ai-monitor"],
   ["/admin/users", "Users", Users, "/admin/users"],
-  ["/admin/partner/dashboard", "Partners", Handshake, "/admin/partner"],
+  ["/admin/partner/dashboard", "Mitra", Handshake, "/admin/partner"],
   ["/admin/impact", "Impact", HeartPulse, "/admin/impact"],
 ] as const;
 
@@ -41,14 +42,14 @@ export default function AdminShell({
     window.location.href = "/login";
   }
 
-  return (
-    <div className="min-h-screen bg-[#f5f7f2]">
-      <aside className="fixed inset-y-0 left-0 hidden w-[270px] bg-[#203a18] px-5 py-7 text-white lg:block">
-        <div className="mb-10 px-3 text-xl font-black">
-          ReFarm Loop{" "}
-          <span className="text-xs font-medium opacity-60">
-            CONTROL TOWER
-          </span>
+  return ( 
+    <div className="min-h-screen bg-[var(--bg)]">
+        {/* Desktop Sidebar */}
+         <aside className="fixed inset-y-0 left-0 hidden w-[270px] bg-[#203a18] px-5 py-7 text-white lg:block">
+        {/* Logo */}
+        <div className="mb-10 flex items-center gap-3 text-[25px] font-black">
+            <Leaf size={28} />
+            <span>ReFarm Loop</span>
         </div>
 
         <nav className="space-y-1">
@@ -77,7 +78,7 @@ export default function AdminShell({
           className="mt-4 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold opacity-80 hover:bg-white/10"
         >
           <Bot size={18} />
-          ReFarm AI
+          LoopaI
         </Link>
 
         <button

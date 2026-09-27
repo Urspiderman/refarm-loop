@@ -108,7 +108,7 @@ export async function middleware(request: NextRequest) {
       break;
 
     case "recovery_partner":
-      home = "/partners";
+      home = "/partner/home";
       break;
 
     case "collector":
@@ -156,7 +156,7 @@ export async function middleware(request: NextRequest) {
   // =========================================================
 
   if (
-    path.startsWith("/partners") &&
+    path.startsWith("/partner") &&
     role !== "recovery_partner"
   ) {
     return NextResponse.redirect(
